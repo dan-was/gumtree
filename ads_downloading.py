@@ -142,7 +142,7 @@ class Ads():
         piv.plot()
 
 if __name__=='__main__':
-#    flats = Ads('flat')
+    flats = Ads('flat')
 #    flats.download_new_ads()
 #    flats.filter_and_transform_to_df()
 #    flats.ad_number_ts()    
