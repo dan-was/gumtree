@@ -7,3 +7,4 @@ maps.py
 time_series.py
 __pycache__
 .spyproject
+.gitignore
