@@ -1,0 +1,9 @@
+*.json
+analysis.py
+avg_analysis.py
+download_pics.py
+location.py
+maps.py
+time_series.py
+__pycache__
+.spyproject
