@@ -1,10 +1,10 @@
-*.json
+.spyproject
+__pycache__
+ads_data.json
+ads_data_rooms.json
 analysis.py
 avg_analysis.py
 download_pics.py
 location.py
 maps.py
 time_series.py
-__pycache__
-.spyproject
-.gitignore
