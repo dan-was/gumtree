@@ -240,7 +240,7 @@ def transform_dataset(dataset_dict):
         print("Sharing format changed")    
     return dataset_df
     
-def filter_dataset(dataset_df, price_limit=15000.0):
+def filter_dataset(dataset_df, price_limit=15000.0, size_limit=300.0):
     """Removes rows with missing values in 'price' and 'date' columns. For
     rooms data additionaly removes rows with missing values in 'share' column.
     Removes ads with price higher than price_limit to remove outliers"""
@@ -248,8 +248,10 @@ def filter_dataset(dataset_df, price_limit=15000.0):
     filtered_px = dataset_df.dropna(subset=['price'])
     # remove rows with price higher tnat 'price limit'
     filtered_px = filtered_px[filtered_px['price']<price_limit]
+    # remove rows with size higher than 'size limi'
+    filtered_size = filtered_px[filtered_px['size_m2']<size_limit]
     # remove rows without date
-    filtered_dt = filtered_px.dropna(subset=['date'])
+    filtered_dt = filtered_size.dropna(subset=['date'])
     # for rooms: remove rows without data in 'share' column
     if 'share' in dataset_df.columns:
         filtered_sh = filtered_dt.dropna(subset=['share'])
@@ -283,7 +285,7 @@ def find_street(desc):
                     splitted = joined.split()
                     found_streets.append(splitted)
         if len(found_streets)>0:
-            print(found_streets)
+#            print(found_streets)
             return found_streets
         else:
             return None

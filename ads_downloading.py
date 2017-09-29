@@ -135,7 +135,8 @@ class Ads():
     def find_street_in_descriprion(self):
         from filtering_functions import find_street
         for ad_id, ad_data in self.ads_data.items():
-            self.ads_data[ad_id]['Ulica_re'] = find_street(self.ads_data[ad_id]['Opis'])
+            if 'Ulica_re' not in ad_data.keys():
+                self.ads_data[ad_id]['Ulica_re'] = find_street(self.ads_data[ad_id]['Opis'])
     
     def ad_number_ts(self):
         piv = self.filtered_data.pivot_table(values='price',index='date',aggfunc='count')
@@ -144,11 +145,14 @@ class Ads():
 if __name__=='__main__':
     flats = Ads('flat')
 #    flats.download_new_ads()
-#    flats.filter_and_transform_to_df()
+    flats.find_street_in_descriprion()
+#    flats.save_dataset()
+    flats.filter_and_transform_to_df()
 #    flats.ad_number_ts()    
-    rooms = Ads('room')
-    rooms.find_street_in_descriprion()
-#    rooms.save_dataset()
+#    rooms = Ads('room')
 #    rooms.download_new_ads()
+#    rooms.find_street_in_descriprion()
+#    rooms.save_dataset()
+    
 #    rooms.filter_and_transform_to_df()
 #    rooms.ad_number_ts()   
