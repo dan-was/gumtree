@@ -266,69 +266,66 @@ def filter_dataset(dataset_df, price_limit=15000.0, size_limit=300.0):
     
 
 def find_street(desc):
+    """Function uses regular expressions to find the street name and number in
+    the description"""
+    # list of key words afret which street name is likely to be mentioned
     search_words = ['ulicy', 'ul.', 'ul', 'ulica', 'aleja', 'aleje', 'alei',
                     'plac', 'placu', 'Ul.', 'Ulica', 'Ulicy', 'Aleja', 'Aleje',
                     'Alei', 'Plac', 'Placu', 'alejach', 'Alejach']
     try:
+        # an empty list where all search results will be stored
         found_streets = []
         for word in search_words:
+            # pattern to match one word that appears after 'word'
             pattern = r"(?<=\b{}\s)(\w+)".format(word) # next word
             found = re.findall(pattern, desc)
             if len(found)>0:
                 for item in found:
+                    # add all matches to the list
                     found_streets.append(item)
+            # pattern to match two words that apperar after 'word'. Added to
+            # adress double-word street names problem
             pattern = r"(?<=\b{}\s)(\w+)(\s)(\w+)".format(word) # next two words
             found = re.findall(pattern, desc)
             if len(found)>0:
                 for item in found:
+                    # joins and splits to keep consistency and create a list
+                    # with distictive words and numbers as separate elements
                     joined = ' '.join(item)
                     splitted = joined.split()
+                    # add all matches to the list
                     found_streets.append(splitted)
         if len(found_streets)>0:
-#            print(found_streets)
+            # return list of lists with matches if anything found
             return found_streets
         else:
             return None
     except TypeError:
+        print("Invalid description type")
         return None
     
 
 
 def find_charges(description):
-    """Function finds words "opłaty" and "ryczałt" in the description text to
-    capture information about the full price"""
+    """Function finds words from 'search_words' list in the description text to
+    capture information about additional charges/bills"""
     search_words = ["ryczałt", "Ryczałt" "opłaty", "Opłaty" "opłat", "Opłat",
                     "kosztów", "Kosztów", "liczniki", "Liczniki", "liczników",
                     "Liczników", "licznikami", "opłatami", "Opłatami", "dopłaty",
                     "ryczałtu", "rachunki", "Rachunki", "media", "Media",
                     "oplaty", "Oplaty"]
+    # empty list to store all matches
     found = []
-    for word in search_words:
-        try:
+    try:
+        for word in search_words:
+            # match all sentences with 'word' and few characters after the dot
             result = re.findall(r"[^.]*{}[^.]*\.............".format(word), description)
             if len(result)>0:
+                # if anything found return list of mathces
                 found.append(result[0].strip())
-        except TypeError:
-            print("Incorrect description type")
-            pass
-    return list(set(found))
+        return list(set(found))
+    except TypeError:
+        print("Invalid description type")
+        return None
+    
 
-
-#
-#
-#ads_data_final = {}
-#
-#for k, v in ads_data_filtered.items():
-#    if find_street(v["Opis"]) != []:
-#        ads_data_final[k] = v
-#        ads_data_final[k]["Ulica_re"] = find_street(v["Opis"])
-#        ads_data_final[k]['Lokalizacja'] = remove_polish(ads_data_final[k]['Lokalizacja'])
-#        if len(find_charges(v["Opis"]))>0:
-#            print(find_charges(v["Opis"]))
-#            ads_data_final[k]['Opłaty'] = find_charges(v["Opis"])
-#    else:
-#        ads_data_final[k] = v
-#        ads_data_final[k]['Lokalizacja'] = remove_polish(ads_data_final[k]['Lokalizacja'])
-#
-#json_save(ads_data_final, "rooms_ads_filtered")
-#
