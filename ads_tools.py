@@ -8,7 +8,7 @@ Created on Sat Sep 23 14:47:00 2017
 import concurrent.futures as cf
 from tqdm import tqdm
 from useful_functions import json_load, json_save
-import pandas as pd
+
         
 class Ads():
     """A Class that contains methods to update flats and rooms ads stored in 
@@ -40,6 +40,17 @@ class Ads():
         self.downloaded_ids = set([k for k,v in self.ads_data.items()])
         # empty list to store links to ads not yet included in the dataset
         self.new_links = []
+    
+    def __str__(self):
+        try:
+            return self.description
+        except:
+            return "Use 'filter_and_transform_to_df' method first"
+    def __repr__(self):
+        try:
+            return self.description
+        except:
+            return "Use 'filter_and_transform_to_df' method first"
     
     def save_dataset(self):
         # determine the name of file where to store the data
@@ -131,6 +142,8 @@ class Ads():
     def filter_and_transform_to_df(self):
         from filtering_functions import transform_dataset, filter_dataset
         self.filtered_data = filter_dataset(transform_dataset(self.ads_data))
+        n, k = self.filtered_data.shape
+        self.description = "Ads dataset class. Number of observations: {}, Number of variables: {}".format(n,k)
         
     def find_street_in_descriprion(self):
         from filtering_functions import find_street
@@ -141,18 +154,22 @@ class Ads():
     def ad_number_ts(self):
         piv = self.filtered_data.pivot_table(values='price',index='date',aggfunc='count')
         piv.plot()
+    
+    def subset(self, date, location):
+        d = self.filtered_data
+        loc = d[d['location']==location]
+        dat = loc[loc['date']==date]
+        return dat
 
 if __name__=='__main__':
     flats = Ads('flat')
-#    flats.download_new_ads()
+    flats.download_new_ads()
     flats.find_street_in_descriprion()
-#    flats.save_dataset()
+    flats.save_dataset()
     flats.filter_and_transform_to_df()
-#    flats.ad_number_ts()    
-#    rooms = Ads('room')
-#    rooms.download_new_ads()
-#    rooms.find_street_in_descriprion()
-#    rooms.save_dataset()
-    
-#    rooms.filter_and_transform_to_df()
-#    rooms.ad_number_ts()   
+    dataset_flats = flats.filtered_data
+    rooms = Ads('room')
+    rooms.download_new_ads()
+    rooms.find_street_in_descriprion()
+    rooms.save_dataset()
+    rooms.filter_and_transform_to_df()
