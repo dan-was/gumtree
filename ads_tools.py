@@ -6,7 +6,7 @@ Created on Sat Sep 23 14:47:00 2017
 """
 
 import concurrent.futures as cf
-from tqdm import tqdm_notebook as tqdm
+from tqdm import tqdm
 from useful_functions import json_load, json_save
 
         
