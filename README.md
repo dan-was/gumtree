@@ -1,3 +1,3 @@
 ## Room and apartment gumtree ad analysis for Warsaw, Poland
 
-<img src='../districts_box.png' /></a>
+![alt text](https://github.com/dan-was/gumtree/districts_box.png "")
