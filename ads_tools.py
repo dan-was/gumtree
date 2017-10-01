@@ -166,10 +166,11 @@ if __name__=='__main__':
     flats.download_new_ads()
     flats.find_street_in_descriprion()
     flats.save_dataset()
-    flats.filter_and_transform_to_df()
-    dataset_flats = flats.filtered_data
+#    flats.filter_and_transform_to_df()
+#    dataset_flats = flats.filtered_data
     rooms = Ads('room')
     rooms.download_new_ads()
     rooms.find_street_in_descriprion()
     rooms.save_dataset()
-    rooms.filter_and_transform_to_df()
+#    rooms.filter_and_transform_to_df()
+#    dataset_rooms = rooms.filtered_data
