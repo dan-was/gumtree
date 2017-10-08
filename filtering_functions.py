@@ -151,9 +151,14 @@ def transform_dataset(dataset_dict):
             'animals', 'type', 'street_regex', 'size_m2', 'url']
     
     Rooms: 
-            'adress', 'price', 'date', 'advertiser', 'available', 'n_rooms',
+            ['adress', 'price', 'date', 'advertiser', 'available', 'n_rooms',
             'location', 'desc', 'charges', 'smoking', 'pref_gen', 'animals', 'type',
             'street_regex', 'size_m2', 'share', 'url']
+                
+    Flats_sale:
+            ['adress', 'price', 'date', 'n_rooms', 'n_bath', 'location', 
+            'advertiser', 'desc', 'parking', 'type', 'size_m2', 'url',
+            'street_regex']
     
     Data types after conversion:
     ----------
@@ -179,6 +184,7 @@ def transform_dataset(dataset_dict):
     # dictionary with 'original':'replacement' column name pairs
     colnames_dict = {'Adres':'adress', 'Cena':'price', 'Coordinates':'coords',
                  'Data dodania':'date', 'Do wynajęcia przez':'advertiser',
+                 'Na sprzedaż przez':'advertiser',
                  'Dostępny':'available', 'Liczba pokoi':'n_rooms',
                  'Liczba łazienek':'n_bath', 'Lokalizacja':'location',
                  'Opis':'desc', 'Palący':'smoking', 'Parking':'parking',
@@ -188,59 +194,47 @@ def transform_dataset(dataset_dict):
                  'Współdzielenie':'share'}
     # transform the dict dataset to pandas DataFrame object with ads as rows
     dataset_df = pd.DataFrame(dataset_dict).transpose()
-    print("Dataset transformed to a DataFrame")
     # change column names
     dataset_df.columns = list(map(lambda x:colnames_dict[x], list(dataset_df.columns)))
-    print("Column names changed")
     # transform adress
     dataset_df['adress'] = dataset_df['adress'].apply(lambda x:format_adress(x))
-    print("Adress format changed")
     # convert pirce
     dataset_df['price'] = dataset_df['price'].apply(lambda x:format_price(x))
-    print("Prices format changed")
     # convert ad date and available date to datetime format
     dataset_df['date'] = dataset_df['date'].apply(lambda x:format_date(x))
-    dataset_df['available'] = dataset_df['available'].apply(lambda x:format_date(x))
-    print("Dates format changed")
+    if 'available' in dataset_df.columns:
+        dataset_df['available'] = dataset_df['available'].apply(lambda x:format_date(x))
     # transform advertiser type
-    dataset_df['advertiser'] = dataset_df['advertiser'].apply(lambda x:format_advertiser(x))
-    print("Advertiser format changed")    
+    dataset_df['advertiser'] = dataset_df['advertiser'].apply(lambda x:format_advertiser(x)) 
     # convert number of rooms to float
     dataset_df['n_rooms'] = dataset_df['n_rooms'].apply(lambda x:format_n_rooms(x))
-    print("Number of rooms format changed")
     # if number of bathrooms column is in the dataset convert it to float
     if 'n_bath' in dataset_df.columns:
         dataset_df['n_bath'] = dataset_df['n_bath'].apply(lambda x:format_n_bathrooms(x))
-        print("Number of bathrooms format changed")
     # transform location format
     dataset_df['location'] = dataset_df['location'].apply(lambda x:format_location(x))
-    print("Location format changed")
     # transform description format
     dataset_df['desc'] = dataset_df['desc'].apply(lambda x:format_desc(x))
-    print("Description format changed")
     # transform smoking to boolean
-    dataset_df['smoking'] = dataset_df['smoking'].apply(lambda x:format_smoking(x))
-    print("Smoking preference format changed")
+    if 'smoking' in dataset_df.columns:
+        dataset_df['smoking'] = dataset_df['smoking'].apply(lambda x:format_smoking(x))
     # if parking place type column is in the dataset transform it's format
     if 'parking' in dataset_df.columns:
         dataset_df['parking'] = dataset_df['parking'].apply(lambda x:format_parking(x))
-        print("Parking data format changed")
     # transform animals to boolean
-    dataset_df['animals'] = dataset_df['animals'].apply(lambda x:format_animals(x))
-    print("Animals allowed format changed")
+    if 'animals' in dataset_df.columns:
+        dataset_df['animals'] = dataset_df['animals'].apply(lambda x:format_animals(x))
     # transform flat type format
     dataset_df['type'] = dataset_df['type'].apply(lambda x:format_type(x))
-    print("Type format changed")
     # convert flat/room size to float
     dataset_df['size_m2'] = dataset_df['size_m2'].apply(lambda x:format_size(x))
-    print("Size m^2 format changed")
     # transform room/flat sharing data format
     if 'share' in dataset_df.columns:
         dataset_df['share'] = dataset_df['share'].apply(lambda x:format_sharing(x))
-        print("Sharing format changed")    
+    print("Dataset transfromed to a DataFrame and formatted")
     return dataset_df
     
-def filter_dataset(dataset_df, price_limit=15000.0, size_limit=300.0):
+def filter_dataset(dataset_df, price_limit, size_limit):
     """Removes rows with missing values in 'price' and 'date' columns. For
     rooms data additionaly removes rows with missing values in 'share' column.
     Removes ads with price higher than price_limit to remove outliers"""

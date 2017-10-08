@@ -8,3 +8,5 @@ download_pics.py
 location.py
 maps.py
 time_series.py
+ads_data_sale.json
+coords.json

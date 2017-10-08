@@ -10,13 +10,18 @@ import json
 
 
 def download_ad_links(page, ad_type):
-    """Downloads and returns list of links from a page of ads for two types of
-    ads: 'flat' or 'room' """
+    """Downloads and returns list of links from a page of ads for three types of
+    ads: 
+        Rent : 'flat' or 'room' 
+        Sell : 'flat_sale
+    """
     # specify link structure based on ad_type
     if ad_type=='flat':
         link = "https://www.gumtree.pl/s-mieszkania-i-domy-do-wynajecia/warszawa/mieszkanie/page-{}/v1c9008l3200008a1dwp{}".format(page, page)
     elif ad_type=='room':
         link = "https://www.gumtree.pl/s-pokoje-do-wynajecia/warszawa/page-{}/v1c9000l3200008p{}".format(page, page)
+    elif ad_type=='flat_sale':
+        link = "https://www.gumtree.pl/s-mieszkania-i-domy-sprzedam-i-kupie/warszawa/mieszkanie/page-{}/v1c9073l3200008a1dwp{}".format(page,page)
     # send a http get request
     req = requests.get(link)
     # store the html soure code in BS objct 
@@ -76,13 +81,13 @@ def download_ad_data(link):
     except:
         pass
 
-def find_last_page(ad_type,page=1000):
-    """Function to find the last page in either 'room' or 'flat ads list
+def find_last_page(ad_type,page=1500):
+    """Function to find the last page in either 'room' or 'flat' ads list
     
     Parameters
     ----------
     ad_type : str,
-        'flat' or 'room'
+        'flat', 'room', 'flat_sale'
         
     page : int,
         page number that is certaintly after the last one - (as of 2017-09 - 
@@ -94,6 +99,8 @@ def find_last_page(ad_type,page=1000):
         link = "https://www.gumtree.pl/s-mieszkania-i-domy-do-wynajecia/warszawa/mieszkanie/page-{}/v1c9008l3200008a1dwp{}".format(page, page)
     elif ad_type=='room':
         link = "https://www.gumtree.pl/s-pokoje-do-wynajecia/warszawa/page-{}/v1c9000l3200008p{}".format(page, page)
+    elif ad_type=='flat_sale':
+        link = "https://www.gumtree.pl/s-mieszkania-i-domy-sprzedam-i-kupie/warszawa/mieszkanie/page-{}/v1c9073l3200008a1dwp{}".format(page,page)
     # send a http get request
     req = requests.get(link)
     # store the html soure code in BS objct

@@ -8,7 +8,8 @@ Created on Sat Sep 23 14:47:00 2017
 import concurrent.futures as cf
 from tqdm import tqdm
 from useful_functions import json_load, json_save
-
+import pandas as pd
+import datetime
         
 class Ads():
     """A Class that contains methods to update flats and rooms ads stored in 
@@ -36,6 +37,8 @@ class Ads():
             self.ads_data = json_load('ads_data.json') # load flats data
         elif self.type=='room':
             self.ads_data = json_load('ads_data_rooms.json') # load rooms data
+        elif self.type=='flat_sale':
+            self.ads_data = json_load('ads_data_sale.json') # load data of flats for sale
         # create a list of ad ids already in the dataset to avoid downloading again
         self.downloaded_ids = set([k for k,v in self.ads_data.items()])
         # empty list to store links to ads not yet included in the dataset
@@ -58,6 +61,8 @@ class Ads():
             filename = 'ads_data'
         elif self.type=='room':
             filename = 'ads_data_rooms'
+        elif self.type=='flat_sale':
+            filename = 'ads_data_sale'
         # save the updated dataset in a json file
         json_save(self.ads_data, filename)
 
@@ -134,14 +139,17 @@ class Ads():
             filename = 'ads_data'
         elif self.type=='room':
             filename = 'ads_data_rooms'
+        elif self.type=='flat_sale':
+            filename = 'ads_data_sale'
         # save the updated dataset in a json file
         json_save(self.ads_data, filename)
         print('New {} ads downloaded: {}'.format(self.type,n_new_ads))
         print('Updated {}.json saved'.format(filename))
         
-    def filter_and_transform_to_df(self):
+    def filter_and_transform_to_df(self, price_limit, size_limit):
         from filtering_functions import transform_dataset, filter_dataset
-        self.filtered_data = filter_dataset(transform_dataset(self.ads_data))
+        self.filtered_data = filter_dataset(transform_dataset(self.ads_data),
+                                            price_limit,size_limit)
         n, k = self.filtered_data.shape
         self.description = "Ads dataset class. Number of observations: {}, Number of variables: {}".format(n,k)
         
@@ -155,22 +163,77 @@ class Ads():
         piv = self.filtered_data.pivot_table(values='price',index='date',aggfunc='count')
         piv.plot()
     
-    def subset(self, date, location):
-        d = self.filtered_data
-        loc = d[d['location']==location]
-        dat = loc[loc['date']==date]
+    def subset(self, last_n_dates=3, location='any', n_rooms='any', agency=False):
+        dat = self.filtered_data
+        if location != 'any':
+            df_list = []
+            for district in location:
+                df_list.append(dat[dat['location']==district])
+            dat = pd.concat(df_list)
+        if n_rooms != 'any':
+            df_list = []
+            for n in n_rooms:
+                df_list.append(dat[dat['n_rooms']==n])
+            dat = pd.concat(df_list)
+        df_list = []
+        td = datetime.date.today()
+        for d in range(last_n_dates,0,-1):
+            delta = datetime.timedelta(1)
+            df_list.append(dat[dat['date']==td])
+            td -= delta
+        dat = pd.concat(df_list)
+        if not agency:
+            dat = dat[dat['advertiser']=='owner']
         return dat
+    def download_coords(self,key,override=False):
+        from download_functions import find_coordinates
+        ids = list(self.filtered_data.index)
+        self.coords = json_load('coords.json')
+        n = 0
+        for ad_id in ids:
+            if n < 2500:
+                if ad_id not in self.coords.keys():
+                    try:
+                        self.coords[ad_id] = find_coordinates(self.filtered_data['adress'].loc[ad_id],key)
+                        n +=1
+                        print(n)
+                    except:
+                        continue
+            else:
+                break
+        json_save(self.coords, 'coords')
 
-#if __name__=='__main__':
-#    flats = Ads('flat')
-#    flats.download_new_ads()
-#    flats.find_street_in_descriprion()
-#    flats.save_dataset()
-#    flats.filter_and_transform_to_df()
-#    dataset_flats = flats.filtered_data
-#    rooms = Ads('room')
-#    rooms.download_new_ads()
-#    rooms.find_street_in_descriprion()
-#    rooms.save_dataset()
-#    rooms.filter_and_transform_to_df()
-#    dataset_rooms = rooms.filtered_data
+if __name__=='__main__':
+    flats_rent = True
+    rooms_rent = True
+    flats_sale = True
+    
+    download_new = True
+    
+    if flats_rent:
+        flats = Ads('flat')
+        if download_new:
+            flats.download_new_ads()
+        flats.find_street_in_descriprion()
+        flats.save_dataset()
+        flats.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
+        dataset_flats = flats.filtered_data
+        
+    if rooms_rent:
+        rooms = Ads('room')
+        if download_new:
+            rooms.download_new_ads()
+        rooms.find_street_in_descriprion()
+        rooms.save_dataset()
+        rooms.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
+        dataset_rooms = rooms.filtered_data
+        
+    if flats_sale:
+        flats_sale = Ads('flat_sale')
+        if download_new:
+            flats_sale.download_new_ads()
+        flats_sale.find_street_in_descriprion()
+        flats_sale.save_dataset()
+        flats_sale.filter_and_transform_to_df(price_limit=10000000.0,
+                                              size_limit=300.0)
+        dataset_flats_sale = flats_sale.filtered_data
