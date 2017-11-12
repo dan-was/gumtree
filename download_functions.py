@@ -116,7 +116,7 @@ def find_coordinates(street_name, key, city='warszawa'):
     given as an argument for the function to work"""
     link = "https://maps.googleapis.com/maps/api/geocode/json?address={},+{}&key={}".format(street_name,city,key)
     # make a get rquest to download the location data in json format
-    req = requests.get(link)
+    req = requests.get(link, timeout=5.0)
     try:
         # extract the coordinates from the downloaded json file
         latitude = json.loads(req.text)["results"][0]["geometry"]["location"]["lat"]
