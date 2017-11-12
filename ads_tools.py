@@ -149,7 +149,7 @@ class Ads():
         print('New {} ads downloaded: {}'.format(self.type,n_new_ads))
         print('Updated {}.json saved'.format(filename))
         
-    def filter_and_transform_to_df(self, price_limit, size_limit):
+    def filter_and_transform_to_df(self, min_price, max_price, size_limit):
         """Method filters the dataset by removing all observations with
         incorrect data format and with price and size higher than specified
         limits. The dataset is then transformed into a pandas DataFrame named
@@ -158,7 +158,7 @@ class Ads():
         # transform the dataset to dataframe (and change format of variables)
         # and filter unwanted data
         self.filtered_data = filter_dataset(transform_dataset(self.ads_data),
-                                            price_limit,size_limit)
+                                            min_price,max_price,size_limit)
         # create an easily accesible description of the resulting dataset
         n, k = self.filtered_data.shape
         self.description = "Ads dataset class. Number of observations: {}, Number of variables: {}".format(n,k)
@@ -289,15 +289,86 @@ class Ads():
         plt.scatter(x,y,c=px,s=150,alpha=0.3)
         plt.show()
         
-            
+    def LinReg(self, district):
+        """Estimates parameters of a linear regression model based on data for
+        a given district. Returns an instance of LinearModel object that can
+        be used to predict values of out-of-sample data"""
+        from sklearn.model_selection import train_test_split
+        from sklearn.linear_model import LinearRegression        
+        if self.type=='flat_sale' or self.type=='flat':
+            dataset = self.filtered_data
+            dataset.reset_index(inplace=True)
+            values = {'n_bath': 1.0, 'parking': 'no'}
+            dataset = dataset.fillna(value=values)
+            dataset.dropna(inplace=True)
+            district_data = dataset[dataset['location'] == district]
+            district_data = district_data[['price','n_rooms','size_m2','parking','n_bath']]
+            parking = pd.get_dummies(district_data['parking'],prefix='parking')
+            model_dataset = pd.concat([district_data,parking],axis=1)
+            model_dataset.drop(['parking','parking_no'],axis=1,inplace=True)
+            X = model_dataset.drop('price',axis=1)
+            y = model_dataset['price']
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+            lm = LinearRegression()
+            lm.fit(X_train,y_train)
+            print("Model evaluated, r^2 = {}".format(round(lm.score(X_test,y_test),3)))
+            return lm
+        
+    def predict_price_from_link(self,link):
+        """Downloads ad information from a given link and based on the variable
+        values uses an estimated linear regression model to predict price"""
+        import download_functions as dwnl
+        from filtering_functions import format_price, format_n_rooms, format_n_bathrooms
+        from filtering_functions import format_parking, format_size, format_location
+        ad_dict = dwnl.download_ad_data(link)
+        district = format_location(ad_dict['Lokalizacja'])
+        price = format_price(ad_dict['Cena'])
+        n_rooms = format_n_rooms(ad_dict['Liczba pokoi'])
+        if 'Liczba łazienek' in ad_dict.keys():
+            n_bath = format_n_bathrooms(ad_dict['Liczba łazienek'])
+        else:
+            n_bath = 1.0
+        if "Parking" in ad_dict.keys():
+            parking = format_parking(ad_dict['Parking'])
+        else:
+            parking = format_parking('Brak')
+        if parking == 'no':
+            parking_basement = 0.0
+            parking_garage = 0.0
+            parking_street = 0.0
+        elif parking == 'garage':
+            parking_basement = 0.0
+            parking_garage = 1.0
+            parking_street = 0.0
+        elif parking == 'basement':
+            parking_basement = 1.0
+            parking_garage = 0.0
+            parking_street = 0.0
+        elif parking == 'street':
+            parking_basement = 0.0
+            parking_garage = 0.0
+            parking_street = 1.0
+        size_m2 = format_size(ad_dict['Wielkość (m2)'])
+        
+        df = pd.DataFrame(data = [[price,n_rooms,size_m2,n_bath,parking_basement,
+                                   parking_garage,parking_street]], 
+                          columns = ['price','n_rooms','size_m2','n_bath','parking_basement',
+                                     'parking_garage','parking_street'])
+        input_variables = df.drop('price',axis=1)
+        print(input_variables.loc[0].transpose())
+        print(" ")
+        lm = self.LinReg(district)
+        pred = lm.predict(input_variables)
+        return round(pred[0],2)
 
+        
 if __name__=='__main__':
-    flats_rent = True
-    rooms_rent = True
+    flats_rent = False
+    rooms_rent = False
     flats_sale = True
     
-    download_new = True
-    transform = False
+    download_new = False
+    transform = True
     
     if flats_rent:
         flats = Ads('flat')
@@ -306,7 +377,9 @@ if __name__=='__main__':
             flats.find_street_in_descriprion()
             flats.save_dataset()
         if transform:
-            flats.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
+            flats.filter_and_transform_to_df(min_price = 300.00,
+                                             max_price=15000.0,
+                                             size_limit=300.0)
             dataset_flats = flats.filtered_data
         
     if rooms_rent:
@@ -316,7 +389,9 @@ if __name__=='__main__':
             rooms.find_street_in_descriprion()
             rooms.save_dataset()
         if transform:
-            rooms.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
+            rooms.filter_and_transform_to_df(min_price = 300.00,
+                                             max_price=15000.0,
+                                             size_limit=300.0)
             dataset_rooms = rooms.filtered_data
         
     if flats_sale:
@@ -326,6 +401,7 @@ if __name__=='__main__':
             flats_sale.find_street_in_descriprion()
             flats_sale.save_dataset()
         if transform:
-            flats_sale.filter_and_transform_to_df(price_limit=10000000.0,
+            flats_sale.filter_and_transform_to_df(min_price = 30000.00,
+                                                  max_price=10000000.0,
                                                   size_limit=300.0)
             dataset_flats_sale = flats_sale.filtered_data

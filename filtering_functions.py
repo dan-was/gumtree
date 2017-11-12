@@ -98,10 +98,11 @@ def format_smoking(data):
         return None
 
 def format_parking(data):
-    """Check if parking place type is valid or return None"""
-    parking = {'Garaż','Kryty','Ulica','Brak'}
-    if data in parking:
-        return data
+    """Check if parking place type is valid and return english name or
+    return None"""
+    parking = {'Garaż':'garage','Kryty':'basement','Ulica':'street','Brak':'no'}
+    if data in parking.keys():
+        return parking[data]
     else:
         return None
 
@@ -234,14 +235,14 @@ def transform_dataset(dataset_dict):
     print("Dataset transfromed to a DataFrame and formatted")
     return dataset_df
     
-def filter_dataset(dataset_df, price_limit, size_limit):
+def filter_dataset(dataset_df, min_price, max_price, size_limit):
     """Removes rows with missing values in 'price' and 'date' columns. For
     rooms data additionaly removes rows with missing values in 'share' column.
     Removes ads with price higher than price_limit to remove outliers"""
     # remove rows without pirce data
     filtered_px = dataset_df.dropna(subset=['price'])
     # remove rows with price higher tnat 'price limit'
-    filtered_px = filtered_px[filtered_px['price']<price_limit]
+    filtered_px = filtered_px[(filtered_px['price']>min_price) & (filtered_px['price']<max_price)]
     # remove rows with size higher than 'size limi'
     filtered_size = filtered_px[filtered_px['size_m2']<size_limit]
     # remove rows without date

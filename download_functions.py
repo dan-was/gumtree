@@ -38,9 +38,14 @@ def download_ad_links(page, ad_type):
 def download_ad_data(link):
     """Returns a dictionary with ad data from gumtree for a given link"""
     attr_dict = {}  #an empty dictionray where the data fill be stored
+    # check if a full url is passed
+    if link[:6] == 'https:':
+        url = link
+    else:
+        url = "https://www.gumtree.pl" + link
     try:
         # send a http get request (stop if no bytes received after 2 seconds)
-        req = requests.get("https://www.gumtree.pl" + link,timeout=2)
+        req = requests.get(url,timeout=2)
         # store the html soure code in BS objct
         soup = BeautifulSoup(req.content, "lxml")   
         # separate the class that c1ontains atributes and description    
