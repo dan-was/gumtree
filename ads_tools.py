@@ -297,6 +297,7 @@ if __name__=='__main__':
     flats_sale = True
     
     download_new = True
+    transform = False
     
     if flats_rent:
         flats = Ads('flat')
@@ -304,8 +305,9 @@ if __name__=='__main__':
             flats.download_new_ads()
             flats.find_street_in_descriprion()
             flats.save_dataset()
-        flats.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
-        dataset_flats = flats.filtered_data
+        if transform:
+            flats.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
+            dataset_flats = flats.filtered_data
         
     if rooms_rent:
         rooms = Ads('room')
@@ -313,8 +315,9 @@ if __name__=='__main__':
             rooms.download_new_ads()
             rooms.find_street_in_descriprion()
             rooms.save_dataset()
-        rooms.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
-        dataset_rooms = rooms.filtered_data
+        if transform:
+            rooms.filter_and_transform_to_df(price_limit=15000.0,size_limit=300.0)
+            dataset_rooms = rooms.filtered_data
         
     if flats_sale:
         flats_sale = Ads('flat_sale')
@@ -322,6 +325,7 @@ if __name__=='__main__':
             flats_sale.download_new_ads()
             flats_sale.find_street_in_descriprion()
             flats_sale.save_dataset()
-        flats_sale.filter_and_transform_to_df(price_limit=10000000.0,
-                                              size_limit=300.0)
-        dataset_flats_sale = flats_sale.filtered_data
+        if transform:
+            flats_sale.filter_and_transform_to_df(price_limit=10000000.0,
+                                                  size_limit=300.0)
+            dataset_flats_sale = flats_sale.filtered_data
