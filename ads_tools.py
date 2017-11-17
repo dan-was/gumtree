@@ -46,6 +46,8 @@ class Ads():
         self.downloaded_ids = set([k for k,v in self.ads_data.items()])
         # empty list to store links to ads not yet included in the dataset
         self.new_links = []
+        # an empty dictionary to keep price prediction models
+        self.models = {}
     
     def __str__(self):
         try:
@@ -261,17 +263,21 @@ class Ads():
     
     def load_coords(self):
         """Load coords from json file"""
+        # load json file that contains dictionary with ad IDs and coordinates
         cdrs = json_load('coords.json')
+        # create a list of IDs in the contained in the dataset
         ids = list(self.filtered_data.index)
-        init_coords = []
+        init_coords = []    # a list of coords before filtering
         for ad_id, crd in cdrs.items():
             if ad_id in ids:
+                # add [id,latitute,longitude,price,size]
                 init_coords.append([ad_id,crd[0],crd[1],self.filtered_data['price'].loc[ad_id],
                                     self.filtered_data['size_m2'].loc[ad_id]])
-        filtered = []
+        filtered = []   # empty list for filtered coords (removing coords outside Warsaw)
         for item in init_coords:
             if item[1] >52.10 and item[1] <52.4 and item[2]>20.8 and item [2] <21.4:
                 filtered.append(item)
+                # save as a class variable
         self.coords = filtered
         
     def coords_plot(self):
@@ -294,114 +300,63 @@ class Ads():
         a given district. Returns an instance of LinearModel object that can
         be used to predict values of out-of-sample data"""
         from sklearn.model_selection import train_test_split
-        from sklearn.linear_model import LinearRegression        
+        from sklearn.linear_model import LinearRegression
+        # same variables used in the model for flat and flat sale
         if self.type=='flat_sale' or self.type=='flat':
-            dataset = self.filtered_data
-            dataset.reset_index(inplace=True)
-            values = {'n_bath': 1.0, 'parking': 'no'}
-            dataset = dataset.fillna(value=values)
-            dataset.dropna(inplace=True)
-            district_data = dataset[dataset['location'] == district]
-            district_data = district_data[['price','n_rooms','size_m2','parking','n_bath']]
-            parking = pd.get_dummies(district_data['parking'],prefix='parking')
-            model_dataset = pd.concat([district_data,parking],axis=1)
-            model_dataset.drop(['parking','parking_no'],axis=1,inplace=True)
-            X = model_dataset.drop('price',axis=1)
-            y = model_dataset['price']
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
-            lm = LinearRegression()
-            lm.fit(X_train,y_train)
-            print("Model evaluated, r^2 = {}".format(round(lm.score(X_test,y_test),3)))
-            return lm
+            try:
+                # load transformed dataser
+                dataset = self.filtered_data
+                # default values for NA
+                values = {'n_bath': 1.0, 'parking': 'no'}
+                # fill missing values with defaults
+                dataset = dataset.fillna(value=values)
+                # create a subset of variables that will be used to estimate the moddel
+                dataset = dataset[['price','n_rooms','size_m2','parking','n_bath','location']]
+                # drop remaining observations with missing values
+                dataset.dropna(inplace=True)
+                # create a subset of observations for a selected district
+                district_data = dataset[dataset['location'] == district]
+                # drop location column (as it contins one value after filtering)
+                district_data = district_data[['price','n_rooms','size_m2','parking','n_bath']]
+                # create dummy columns for four types of parking place
+                # ['garage','basement','street','no']
+                parking = pd.get_dummies(district_data['parking'],prefix='parking')
+                # add parking variables to the dataset
+                model_dataset = pd.concat([district_data,parking],axis=1)
+                # drop original parking variable as well as one indicating lack
+                # of parking place to prevent multicollinerality
+                model_dataset.drop(['parking','parking_no'],axis=1,inplace=True)
+                # create input (X) and target (y) variable vecotrs
+                X = model_dataset.drop('price',axis=1)
+                y = model_dataset['price']
+                # spit the dataset into training and testing data
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3)
+                # create an instance of Linear Model and estimate the parameters
+                lm = LinearRegression()
+                lm.fit(X_train,y_train)
+                # print n_obs, R^2 metric and return the model object
+                print("Model evaluated, n = {}, r^2 = {}".format(len(model_dataset),
+                                                          round(lm.score(X_test,y_test),3)))
+                return lm
+            except AttributeError:
+                print("Dataset not transformed yet, use method 'filter_and_transform_to_df' first")
+                
         
     def predict_price_from_link(self,link):
         """Downloads ad information from a given link and based on the variable
         values uses an estimated linear regression model to predict price"""
         import download_functions as dwnl
-        from filtering_functions import format_price, format_n_rooms, format_n_bathrooms
-        from filtering_functions import format_parking, format_size, format_location
+        from filtering_functions import create_dataframe_from_one_ad
         ad_dict = dwnl.download_ad_data(link)
-        district = format_location(ad_dict['Lokalizacja'])
-        price = format_price(ad_dict['Cena'])
-        n_rooms = format_n_rooms(ad_dict['Liczba pokoi'])
-        if 'Liczba łazienek' in ad_dict.keys():
-            n_bath = format_n_bathrooms(ad_dict['Liczba łazienek'])
-        else:
-            n_bath = 1.0
-        if "Parking" in ad_dict.keys():
-            parking = format_parking(ad_dict['Parking'])
-        else:
-            parking = format_parking('Brak')
-        if parking == 'no':
-            parking_basement = 0.0
-            parking_garage = 0.0
-            parking_street = 0.0
-        elif parking == 'garage':
-            parking_basement = 0.0
-            parking_garage = 1.0
-            parking_street = 0.0
-        elif parking == 'basement':
-            parking_basement = 1.0
-            parking_garage = 0.0
-            parking_street = 0.0
-        elif parking == 'street':
-            parking_basement = 0.0
-            parking_garage = 0.0
-            parking_street = 1.0
-        size_m2 = format_size(ad_dict['Wielkość (m2)'])
-        
-        df = pd.DataFrame(data = [[price,n_rooms,size_m2,n_bath,parking_basement,
-                                   parking_garage,parking_street]], 
-                          columns = ['price','n_rooms','size_m2','n_bath','parking_basement',
-                                     'parking_garage','parking_street'])
+        df, district = create_dataframe_from_one_ad(ad_dict)
         input_variables = df.drop('price',axis=1)
         print(input_variables.loc[0].transpose())
         print(" ")
-        lm = self.LinReg(district)
+        try:
+            lm = self.models[district]
+        except KeyError:
+            lm = self.LinReg(district)
+            self.models[district] = lm
         pred = lm.predict(input_variables)
-        return round(pred[0],2)
-
-        
-if __name__=='__main__':
-    flats_rent = False
-    rooms_rent = False
-    flats_sale = True
-    
-    download_new = False
-    transform = True
-    
-    if flats_rent:
-        flats = Ads('flat')
-        if download_new:
-            flats.download_new_ads()
-            flats.find_street_in_descriprion()
-            flats.save_dataset()
-        if transform:
-            flats.filter_and_transform_to_df(min_price = 300.00,
-                                             max_price=15000.0,
-                                             size_limit=300.0)
-            dataset_flats = flats.filtered_data
-        
-    if rooms_rent:
-        rooms = Ads('room')
-        if download_new:
-            rooms.download_new_ads()
-            rooms.find_street_in_descriprion()
-            rooms.save_dataset()
-        if transform:
-            rooms.filter_and_transform_to_df(min_price = 300.00,
-                                             max_price=15000.0,
-                                             size_limit=300.0)
-            dataset_rooms = rooms.filtered_data
-        
-    if flats_sale:
-        flats_sale = Ads('flat_sale')
-        if download_new:
-            flats_sale.download_new_ads()
-            flats_sale.find_street_in_descriprion()
-            flats_sale.save_dataset()
-        if transform:
-            flats_sale.filter_and_transform_to_df(min_price = 30000.00,
-                                                  max_price=10000000.0,
-                                                  size_limit=300.0)
-            dataset_flats_sale = flats_sale.filtered_data
+        print(" ")
+        print('Estimated price: {0:.2f}'.format(float(pred)))

@@ -323,4 +323,41 @@ def find_charges(description):
         print("Invalid description type")
         return None
     
+def create_dataframe_from_one_ad(ad_dict):
+    """Transforms dictionary with downloaded data of an ad and returns
+    dataframe that can be used in price prediction model"""
+    district = format_location(ad_dict['Lokalizacja'])
+    price = format_price(ad_dict['Cena'])
+    n_rooms = format_n_rooms(ad_dict['Liczba pokoi'])
+    if 'Liczba łazienek' in ad_dict.keys():
+        n_bath = format_n_bathrooms(ad_dict['Liczba łazienek'])
+    else:
+        n_bath = 1.0
+    if "Parking" in ad_dict.keys():
+        parking = format_parking(ad_dict['Parking'])
+    else:
+        parking = format_parking('Brak')
+    if parking == 'no':
+        parking_basement = 0.0
+        parking_garage = 0.0
+        parking_street = 0.0
+    elif parking == 'garage':
+        parking_basement = 0.0
+        parking_garage = 1.0
+        parking_street = 0.0
+    elif parking == 'basement':
+        parking_basement = 1.0
+        parking_garage = 0.0
+        parking_street = 0.0
+    elif parking == 'street':
+        parking_basement = 0.0
+        parking_garage = 0.0
+        parking_street = 1.0
+    size_m2 = format_size(ad_dict['Wielkość (m2)'])
+    
+    df = pd.DataFrame(data = [[price,n_rooms,size_m2,n_bath,parking_basement,
+                               parking_garage,parking_street]], 
+                      columns = ['price','n_rooms','size_m2','n_bath','parking_basement',
+                                 'parking_garage','parking_street'])
+    return df, district
 
