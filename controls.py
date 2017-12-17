@@ -10,16 +10,16 @@ dataset
 """
 
 from ads_tools import Ads
-
+from download_functions import find_last_page 
 
 if __name__=='__main__':
     flats_rent = True
-    rooms_rent = False
-    flats_sale = False
-    
-    download_new = False
-    transform = True
-    
+    rooms_rent = True
+    flats_sale = True
+
+    download_new = True
+    transform = False
+
     if flats_rent:
         flats = Ads('flat')
         if download_new:
@@ -31,7 +31,7 @@ if __name__=='__main__':
                                              max_price=15000.0,
                                              size_limit=300.0)
             dataset_flats = flats.filtered_data
-        
+
     if rooms_rent:
         rooms = Ads('room')
         if download_new:
@@ -43,7 +43,7 @@ if __name__=='__main__':
                                              max_price=15000.0,
                                              size_limit=300.0)
             dataset_rooms = rooms.filtered_data
-        
+
     if flats_sale:
         flats_sale = Ads('flat_sale')
         if download_new:
