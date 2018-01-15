@@ -10,12 +10,11 @@ dataset
 """
 
 from ads_tools import Ads
-from download_functions import find_last_page 
 
 if __name__=='__main__':
     flats_rent = True
     rooms_rent = True
-    flats_sale = True
+    flats_sale = False
 
     download_new = True
     transform = False
