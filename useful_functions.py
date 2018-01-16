@@ -27,7 +27,8 @@ def json_load(file):
     return variable
 
 def json_save(variable, filename, quiet = True):
-    with open(str(filename + '.json'), 'w') as f:
+    "Include extenstion! Saves a dict to json"
+    with open(str(filename), 'w') as f:
         json.dump(variable, f, sort_keys=True, indent=4)
     if not quiet:
         print('File ' + str(filename) + ' saved')

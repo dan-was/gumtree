@@ -25,28 +25,32 @@ class Ads():
     ----------
     ad_type : string,
         'flat' or 'room'
+    
+    filename : string, None
+        Specify the name of file you want to load the data from. If file is found
+        it will be loaded, otherwise a new JSON file will be created
 
 
     Examples
     --------
-    >>> flats = Ads('flat')
+    >>> flats = Ads('flat', 'ads_data.json')
     >>> flats.download_new_ads()
 
     """
-    def __init__(self,ad_type):
+    def __init__(self,ad_type, filename):
         # determine the type of ad either 'flat' or 'room'
         self.type = ad_type
-        if self.type=='flat':
-            self.ads_data = json_load('ads_data.json') # load flats data
-        elif self.type=='room':
-            self.ads_data = json_load('ads_data_rooms.json') # load rooms data
-        elif self.type=='flat_sale':
-            self.ads_data = json_load('ads_data_sale.json') # load data of flats for sale
+        self.filename = filename
+        try:
+            self.ads_data = json_load(filename)
+        except FileNotFoundError:
+            print("File {} not found. New file will be created on save".format(filename))
+            self.ads_data = dict()
         # create a list of ad ids already in the dataset to avoid downloading again
         self.downloaded_ids = set([k for k,v in self.ads_data.items()])
         # empty list to store links to ads not yet included in the dataset
         self.new_links = []
-        # an empty dictionary to keep price prediction models
+        # an empty dictionary to store price prediction models
         self.models = {}
     
     def __str__(self):
@@ -61,15 +65,8 @@ class Ads():
             return "Use 'filter_and_transform_to_df' method first"
     
     def save_dataset(self):
-        # determine the name of file where to store the data
-        if self.type=='flat':
-            filename = 'ads_data'
-        elif self.type=='room':
-            filename = 'ads_data_rooms'
-        elif self.type=='flat_sale':
-            filename = 'ads_data_sale'
         # save the updated dataset in a json file
-        json_save(self.ads_data, filename)
+        json_save(self.ads_data, self.filename)
 
     def download_new_ads(self, max_pages='all'):
         """Update current dataset with new ads form gumtree.pl
@@ -139,17 +136,10 @@ class Ads():
                 # add the data of new ad to the dataset
                 self.ads_data[ad_id] = ad
                 n_new_ads += 1
-        # determine the name of file where to store the data
-        if self.type=='flat':
-            filename = 'ads_data'
-        elif self.type=='room':
-            filename = 'ads_data_rooms'
-        elif self.type=='flat_sale':
-            filename = 'ads_data_sale'
         # save the updated dataset in a json file
-        json_save(self.ads_data, filename)
+        self.save_dataset()
         print('New {} ads downloaded: {}'.format(self.type,n_new_ads))
-        print('Updated {}.json saved'.format(filename))
+        print('Updated {} saved'.format(self.filename))
         
     def filter_and_transform_to_df(self, min_price, max_price, size_limit):
         """Method filters the dataset by removing all observations with
@@ -255,11 +245,11 @@ class Ads():
                     n +=1
                     print(n)
                     if n%100==0:
-                        json_save(coords, 'coords') # save every 100 downloaded coords
+                        json_save(coords, 'coords.json') # save every 100 downloaded coords
         # remove None values
         coords = dict((k,v) for k,v in coords.items() if v is not None)
         # save updated coords set in a json file
-        json_save(coords, 'coords')
+        json_save(coords, 'coords.json')
     
     def load_coords(self):
         """Load coords from json file"""

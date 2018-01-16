@@ -14,13 +14,13 @@ from ads_tools import Ads
 if __name__=='__main__':
     flats_rent = True
     rooms_rent = True
-    flats_sale = False
+    flats_sale = True
 
     download_new = True
     transform = False
 
     if flats_rent:
-        flats = Ads('flat')
+        flats = Ads('flat', 'ads_data.json')
         if download_new:
             flats.download_new_ads()
             flats.find_street_in_descriprion()
@@ -32,7 +32,7 @@ if __name__=='__main__':
             dataset_flats = flats.filtered_data
 
     if rooms_rent:
-        rooms = Ads('room')
+        rooms = Ads('room', 'ads_data_rooms.json')
         if download_new:
             rooms.download_new_ads()
             rooms.find_street_in_descriprion()
@@ -44,7 +44,7 @@ if __name__=='__main__':
             dataset_rooms = rooms.filtered_data
 
     if flats_sale:
-        flats_sale = Ads('flat_sale')
+        flats_sale = Ads('flat_sale', 'ads_data_sale2.json')
         if download_new:
             flats_sale.download_new_ads()
             flats_sale.find_street_in_descriprion()
